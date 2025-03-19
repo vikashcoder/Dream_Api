@@ -34,14 +34,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Authenticate with Google Cloud
         run: |
-          echo "${{ secrets.GCLOUD_SERVICE_KEY }}" > gcloud-key.json
+          echo "${{ secrets.GCLOUD_SERVICE_KEY }}" | base64 --decode > gcloud-key.json
           gcloud auth activate-service-account --key-file=gcloud-key.json
           gcloud config set project ${{ secrets.GCLOUD_PROJECT_ID }}
 
       - name: Build and Push Docker Image
         run: |
+          gcloud auth configure-docker
           docker build -t gcr.io/${{ secrets.GCLOUD_PROJECT_ID }}/dream-api:latest .
           docker push gcr.io/${{ secrets.GCLOUD_PROJECT_ID }}/dream-api:latest
 
