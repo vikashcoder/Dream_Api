@@ -39,9 +39,10 @@ jobs:
 
       - name: Authenticate with Google Cloud
         run: |
-          echo "${{ secrets.GCLOUD_SERVICE_KEY }}" | base64 --decode > gcloud-key.json
+          echo '${{ secrets.GCLOUD_SERVICE_KEY }}' > gcloud-key.json
           gcloud auth activate-service-account --key-file=gcloud-key.json
-          gcloud config set project ${{ secrets.GCLOUD_PROJECT_ID }}
+          gcloud config set project dream-api-project
+      
 
       - name: Build and Push Docker Image
         run: |
