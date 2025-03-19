@@ -1,0 +1,54 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Set Up MongoDB Environment Variable
+        run: echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> $GITHUB_ENV
+
+      - name: Run Tests
+        run: npm test
+        env:
+          MONGO_URI: ${{ env.MONGO_URI }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Authenticate with Google Cloud
+        run: |
+          echo "${{ secrets.GCLOUD_SERVICE_KEY }}" > gcloud-key.json
+          gcloud auth activate-service-account --key-file=gcloud-key.json
+          gcloud config set project ${{ secrets.GCLOUD_PROJECT_ID }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t gcr.io/${{ secrets.GCLOUD_PROJECT_ID }}/dream-api:latest .
+          docker push gcr.io/${{ secrets.GCLOUD_PROJECT_ID }}/dream-api:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy dream-api \
+            --image gcr.io/${{ secrets.GCLOUD_PROJECT_ID }}/dream-api:latest \
+            --platform managed \
+            --region asia-south1 \
+            --allow-unauthenticated
